@@ -39,3 +39,5 @@ git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057
 
 # Diffusers from GitHub
 git+https://github.com/huggingface/diffusers
+# BEN2 background removal
+git+https://github.com/PramaLLC/BEN2.git

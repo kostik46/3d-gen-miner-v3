@@ -88,6 +88,7 @@ class BackgroundRemovalService:
         if has_alpha:
             # If the image has alpha channel, return the image
             output = image
+            image_without_background = image  # Fix: define this variable
             
         else:
             # PIL.Image (H, W, C) C=3
