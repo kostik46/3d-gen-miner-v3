@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  trellis2-gs-generator:
+    container_name: trellis2-gs-generator
+    image: trellis2-gs-generator:hybrid-v2
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+
+    # Use host network
+    network_mode: host
+
+    # Use NVIDIA runtime for GPU access
+    runtime: nvidia
+
+    volumes:
+      # NOTE: Code mount disabled for production - use built-in image code
+      # Uncomment for development hot-reload (requires matching local files):
+      # - ../:/workspace
+
+      # Model cache (to avoid re-downloading)
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - ~/.cache/torch:/root/.cache/torch
+      - ~/.cache/modelscope:/root/.cache/modelscope
+
+    # GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute, utility]
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      # GPU settings
+      - GPU=0
+      - QWEN_GPU=0
+      - TRELLIS_GPU=0
+      # Attention backend
+      - ATTN_BACKEND=flash-attn
+      # Sparse conv algorithm
+      - SPCONV_ALGO=native
+      # Model settings
+      - TRELLIS2_MODEL_ID=microsoft/TRELLIS.2-4B
+      - TRELLIS1_MODEL_ID=microsoft/TRELLIS-image-large
+      # Generation settings (tuned for quality)
+      - SPARSE_STRUCTURE_STEPS=12
+      - SPARSE_STRUCTURE_CFG=7.0
+      - SLAT_STEPS=20
+      - SLAT_CFG=2.4
+      - NUM_OVERSAMPLES=1
+      # Qwen image edit settings (diffusers + LoRA)
+      - USE_QWEN_EDIT=true
+      - QWEN_DTYPE=bf16
+      - QWEN_NUM_INFERENCE_STEPS=4
+      - QWEN_TRUE_CFG_SCALE=1.0
+      - QWEN_HEIGHT=1024
+      - QWEN_WIDTH=1024
+      - QWEN_MODEL_PATH=Qwen/Qwen-Image-Edit-2509
+      - QWEN_LORA_PATH=lightx2v/Qwen-Image-Lightning
+      - QWEN_LORA_FILENAME=Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors
+      # Background removal settings (BiRefNet for V2)
+      - BACKGROUND_REMOVAL_MODEL_ID=ZhengPeng7/BiRefNet
+      # Image processing (v12 config)
+      # Note: OUTPUT_IMAGE_SIZE defaults to [518, 518] in settings.py
+      - PADDING_PERCENTAGE=0.2
+      - LIMIT_PADDING=true
+      # Server settings
+      - PORT=10006
+      # Output settings
+      - SAVE_GENERATED_FILES=false
+      - SEND_GENERATED_FILES=false
+
+    # Increase shared memory for PyTorch
+    shm_size: '16gb'
+
+    # Restart policy
+    restart: unless-stopped
